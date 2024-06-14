@@ -44,6 +44,12 @@ impl UdpProxiReceiver for tokio::net::UdpSocket {
     }
 }
 
+impl <T: UdpProxiReceiver> UdpProxiReceiver for Arc<T> {
+    fn recv<'a>(&'a self, buff: &'a mut [u8]) -> impl Future<Output=Result<(usize, SocketAddr)>> + 'a + Send {
+        (**self).recv(buff)
+    }
+}
+
 impl UdpProxiSender for tokio::net::UdpSocket {
     fn send<'a>(&'a self, packet: &'a [u8], _from: SocketAddr, to: SocketAddr) -> impl Future<Output=Result<()>> + 'a + Send {
         let fut = self.send_to(packet, to);
@@ -52,6 +58,12 @@ impl UdpProxiSender for tokio::net::UdpSocket {
             fut.await?;
             Ok(())
         }
+    }
+}
+
+impl <T: UdpProxiSender> UdpProxiSender for Arc<T> {
+    fn send<'a>(&'a self, packet: &'a [u8], from: SocketAddr, to: SocketAddr) -> impl Future<Output=Result<()>> + 'a + Send {
+        (**self).send(packet, from, to)
     }
 }
 
