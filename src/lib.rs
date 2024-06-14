@@ -3,7 +3,7 @@ extern crate log;
 
 use std::future::Future;
 use std::io::Result;
-use std::net::SocketAddr;
+use std::net::{IpAddr, Ipv4Addr, Ipv6Addr, SocketAddr};
 use std::ops::Deref;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicI64, Ordering};
@@ -31,11 +31,50 @@ pub trait UdpProxiReceiver {
 pub trait UdpProxiEndpointCreator {
     type TxRx;
 
-    fn new_endpoint(
-        &mut self,
+    fn new_endpoint<'a>(
+        &'a mut self,
         from: SocketAddr,
         to: SocketAddr,
-    ) -> impl Future<Output=Result<Self::TxRx>>;
+    ) -> impl Future<Output=Result<Self::TxRx>> + 'a;
+}
+
+impl UdpProxiReceiver for tokio::net::UdpSocket {
+    fn recv<'a>(&'a self, buff: &'a mut [u8]) -> impl Future<Output=Result<(usize, SocketAddr)>> + 'a + Send {
+        self.recv_from(buff)
+    }
+}
+
+impl UdpProxiSender for tokio::net::UdpSocket {
+    fn send<'a>(&'a self, packet: &'a [u8], _from: SocketAddr, to: SocketAddr) -> impl Future<Output=Result<()>> + 'a + Send {
+        let fut = self.send_to(packet, to);
+
+        async {
+            fut.await?;
+            Ok(())
+        }
+    }
+}
+
+impl <Fn, Fut, O> UdpProxiEndpointCreator for Fn
+    where
+        Fn: FnMut(SocketAddr, SocketAddr) -> Fut,
+        for<'a> Fut: Future<Output=Result<O>> + 'a
+{
+    type TxRx = O;
+
+    fn new_endpoint<'a>(&'a mut self, from: SocketAddr, to: SocketAddr) -> impl Future<Output=Result<Self::TxRx>> + 'a {
+        (self)(from, to)
+    }
+}
+
+pub async fn default_endpoint_creator(_from: SocketAddr, to: SocketAddr) -> Result<tokio::net::UdpSocket> {
+    let bind_addr = match to {
+        SocketAddr::V4(_) => SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), 0),
+        SocketAddr::V6(_) => SocketAddr::new(IpAddr::V6(Ipv6Addr::UNSPECIFIED), 0),
+    };
+
+    let to_socket = tokio::net::UdpSocket::bind(bind_addr).await?;
+    Ok(to_socket)
 }
 
 type MappingInner<Tx> = Vec<Arc<(SocketAddr, Tx, AtomicI64)>>;

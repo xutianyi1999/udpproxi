@@ -5,6 +5,6 @@ edition = "2021"
 
 [dependencies]
 arc-swap = "1"
-tokio = { version = "1", default-features = false, features = ["rt", "time", "macros"] }
+tokio = { version = "1", default-features = false, features = ["rt", "time", "macros", "net"] }
 chrono = "0.4"
 log = "0.4"
