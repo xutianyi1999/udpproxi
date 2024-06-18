@@ -91,6 +91,7 @@ pub async fn default_endpoint_creator(_from: SocketAddr, to: SocketAddr) -> Resu
 
 type MappingInner<Tx> = Vec<Arc<(SocketAddr, Tx, AtomicI64)>>;
 
+#[derive(Clone)]
 pub struct UdpProxi<SrcTx, EndpointCreator>
 where
     EndpointCreator: UdpProxiEndpointCreator,
