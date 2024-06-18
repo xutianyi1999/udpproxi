@@ -11,7 +11,7 @@ A simple udp forwarding library that can easily manage udp sessions
 
 ### Usage
 
-link `treed_gpu` crate
+link `udpproxi` crate
 
 Cargo.toml
 ```toml
