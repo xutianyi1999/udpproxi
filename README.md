@@ -30,8 +30,8 @@ use udpproxi::UdpProxi;
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let bind = SocketAddr::from((IpAddr::from([127, 0, 0, 1]), 53))?;
-    let forward_to = SocketAddr::from((IpAddr::from([8, 8, 8, 8]), 53))?;
+    let bind = SocketAddr::from((IpAddr::from([127, 0, 0, 1]), 53));
+    let forward_to = SocketAddr::from((IpAddr::from([8, 8, 8, 8]), 53));
     
     let socket = tokio::net::UdpSocket::bind(bind).await?;
     let socket = Arc::new(socket);
