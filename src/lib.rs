@@ -91,7 +91,6 @@ pub async fn default_endpoint_creator(_from: SocketAddr, to: SocketAddr) -> Resu
 
 type MappingInner<Tx> = Vec<Arc<(SocketAddr, Tx, AtomicI64)>>;
 
-#[derive(Clone)]
 pub struct UdpProxi<SrcTx, EndpointCreator>
 where
     EndpointCreator: UdpProxiEndpointCreator,
@@ -100,6 +99,17 @@ where
     endpoint_creator: EndpointCreator,
     mapping: Arc<ArcSwap<MappingInner<EndpointCreator::TxRx>>>,
     mapping_cache: Cache<Arc<ArcSwap<MappingInner<EndpointCreator::TxRx>>>, Arc<MappingInner<EndpointCreator::TxRx>>>,
+}
+
+impl <A: Clone, B: Clone> Clone for UdpProxi<A, B> {
+    fn clone(&self) -> Self {
+        Self {
+            to_src: self.to_src.clone(),
+            endpoint_creator: self.endpoint_creator.clone(),
+            mapping: self.mapping.clone(),
+            mapping_cache: self.mapping_cache.clone()
+        }
+    }
 }
 
 impl<SrcTx, EndpointCreator> UdpProxi<SrcTx, EndpointCreator>
