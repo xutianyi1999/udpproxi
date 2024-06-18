@@ -2,6 +2,10 @@
 name = "udpproxi"
 version = "0.1.0"
 edition = "2021"
+authors = ["xutianyi <xutianyi1999@live.com>"]
+description = "udp forwarding library"
+license = "Apache-2.0"
+repository = "https://github.com/xutianyi1999/udpproxi"
 
 [dependencies]
 arc-swap = "1"
