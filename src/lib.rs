@@ -13,68 +13,66 @@ use arc_swap::{ArcSwap, Cache};
 use chrono::Utc;
 
 pub trait UdpProxiSender {
-    fn send<'a>(
-        &'a self,
-        packet: &'a [u8],
+    fn send(
+        &self,
+        packet: &[u8],
         from: SocketAddr,
         to: SocketAddr,
-    ) -> impl Future<Output=Result<()>> + 'a + Send;
+    ) -> impl Future<Output=Result<()>> + Send;
 }
 
 pub trait UdpProxiReceiver {
-    fn recv<'a>(
-        &'a self,
-        buff: &'a mut [u8],
-    ) -> impl Future<Output=Result<(usize, SocketAddr)>> + 'a + Send;
+    fn recv(
+        &self,
+        buff: &mut [u8],
+    ) -> impl Future<Output=Result<(usize, SocketAddr)>> + Send;
 }
 
 pub trait UdpProxiEndpointCreator {
     type TxRx;
 
-    fn new_endpoint<'a>(
-        &'a mut self,
+    fn new_endpoint(
+        &mut self,
         from: SocketAddr,
         to: SocketAddr,
-    ) -> impl Future<Output=Result<Self::TxRx>> + 'a;
+    ) -> impl Future<Output=Result<Self::TxRx>>;
 }
 
 impl UdpProxiReceiver for tokio::net::UdpSocket {
-    fn recv<'a>(&'a self, buff: &'a mut [u8]) -> impl Future<Output=Result<(usize, SocketAddr)>> + 'a + Send {
+    fn recv(&self, buff: &mut [u8]) -> impl Future<Output=Result<(usize, SocketAddr)>> + Send {
         self.recv_from(buff)
     }
 }
 
-impl <T: UdpProxiReceiver> UdpProxiReceiver for Arc<T> {
-    fn recv<'a>(&'a self, buff: &'a mut [u8]) -> impl Future<Output=Result<(usize, SocketAddr)>> + 'a + Send {
+impl<T: UdpProxiReceiver> UdpProxiReceiver for Arc<T> {
+    fn recv(&self, buff: &mut [u8]) -> impl Future<Output=Result<(usize, SocketAddr)>> + Send {
         (**self).recv(buff)
     }
 }
 
 impl UdpProxiSender for tokio::net::UdpSocket {
-    fn send<'a>(&'a self, packet: &'a [u8], _from: SocketAddr, to: SocketAddr) -> impl Future<Output=Result<()>> + 'a + Send {
-        let fut = self.send_to(packet, to);
-
-        async {
-            fut.await?;
+    fn send(&self, packet: &[u8], _from: SocketAddr, to: SocketAddr) -> impl Future<Output=Result<()>> + Send {
+        async move {
+            self.send_to(packet, to).await?;
             Ok(())
         }
     }
 }
 
-impl <T: UdpProxiSender> UdpProxiSender for Arc<T> {
-    fn send<'a>(&'a self, packet: &'a [u8], from: SocketAddr, to: SocketAddr) -> impl Future<Output=Result<()>> + 'a + Send {
+impl<T: UdpProxiSender> UdpProxiSender for Arc<T> {
+    fn send(&self, packet: &[u8], from: SocketAddr, to: SocketAddr) -> impl Future<Output=Result<()>> + Send {
         (**self).send(packet, from, to)
     }
 }
 
-impl <Fn, Fut, O> UdpProxiEndpointCreator for Fn
-    where
-        Fn: FnMut(SocketAddr, SocketAddr) -> Fut,
-        for<'a> Fut: Future<Output=Result<O>> + 'a
+impl<Fn, Fut, O> UdpProxiEndpointCreator for Fn
+where
+    Fn: FnMut(SocketAddr, SocketAddr) -> Fut,
+    Fut: Future<Output=Result<O>>,
 {
     type TxRx = O;
 
-    fn new_endpoint<'a>(&'a mut self, from: SocketAddr, to: SocketAddr) -> impl Future<Output=Result<Self::TxRx>> + 'a {
+    fn new_endpoint(&mut self, from: SocketAddr, to: SocketAddr) -> impl Future<Output=Result<Self::TxRx>> {
         (self)(from, to)
     }
 }
@@ -101,13 +99,13 @@ where
     mapping_cache: Cache<Arc<ArcSwap<MappingInner<EndpointCreator::TxRx>>>, Arc<MappingInner<EndpointCreator::TxRx>>>,
 }
 
-impl <A: Clone, B: Clone + UdpProxiEndpointCreator> Clone for UdpProxi<A, B> {
+impl<A: Clone, B: Clone + UdpProxiEndpointCreator> Clone for UdpProxi<A, B> {
     fn clone(&self) -> Self {
         Self {
             to_src: self.to_src.clone(),
             endpoint_creator: self.endpoint_creator.clone(),
             mapping: self.mapping.clone(),
-            mapping_cache: self.mapping_cache.clone()
+            mapping_cache: self.mapping_cache.clone(),
         }
     }
 }
