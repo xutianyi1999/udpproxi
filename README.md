@@ -23,13 +23,12 @@ tokio = { version = "1", features = ["full"] }
 main.rs
 
 ```rust
-
-#[tokio::main]
 use std::io::Result;
 use std::net::{IpAddr, SocketAddr};
 use std::sync::Arc;
 use udpproxi::UdpProxi;
 
+#[tokio::main]
 async fn main() -> Result<()> {
     let bind = SocketAddr::from((IpAddr::from([127, 0, 0, 1]), 53))?;
     let forward_to = SocketAddr::from((IpAddr::from([8, 8, 8, 8]), 53))?;
