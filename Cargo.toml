@@ -1,6 +1,6 @@
 [package]
 name = "udpproxi"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 authors = ["xutianyi <xutianyi1999@live.com>"]
 description = "udp forwarding library"
