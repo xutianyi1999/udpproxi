@@ -101,7 +101,7 @@ where
     mapping_cache: Cache<Arc<ArcSwap<MappingInner<EndpointCreator::TxRx>>>, Arc<MappingInner<EndpointCreator::TxRx>>>,
 }
 
-impl <A: Clone, B: Clone> Clone for UdpProxi<A, B> {
+impl <A: Clone, B: Clone + UdpProxiEndpointCreator> Clone for UdpProxi<A, B> {
     fn clone(&self) -> Self {
         Self {
             to_src: self.to_src.clone(),
